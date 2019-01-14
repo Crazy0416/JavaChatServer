@@ -45,6 +45,7 @@ public class ServerController {
         while(true) {
             Socket socket = serverSocket.accept();
             if( socket != null ) { //클라이언트 소켓과 연결시
+                System.out.println(socket.getInetAddress().getHostName() + " 클라이언트가 연결되었습니다.");
                 sr = new ServerSocketThread(socket); //채팅 스레드를 생성합니다.
                 t = new Thread(sr); //채팅스레드를 시작합니다.
                 t.start();
