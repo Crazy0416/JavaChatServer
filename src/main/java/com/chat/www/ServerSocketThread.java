@@ -2,10 +2,7 @@ package com.chat.www;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
-import com.oracle.javafx.jmx.json.JSONException;
-import com.sun.security.ntlm.Server;
 
 import java.io.BufferedReader;
 import java.io.IOException;
