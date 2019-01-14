@@ -2,6 +2,8 @@ package com.chat.www;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import com.google.gson.JsonSyntaxException;
 import com.oracle.javafx.jmx.json.JSONException;
 import com.sun.security.ntlm.Server;
 
@@ -20,6 +22,7 @@ public class ServerSocketThread implements Runnable{
     BufferedReader ois;
     PrintWriter oos;
     ChatRoom room;
+    String uid;
 
     public ServerSocketThread(Socket socket) {
         this.socket = socket;
@@ -40,6 +43,9 @@ public class ServerSocketThread implements Runnable{
         try
         {
             while( (receiveData = ois.readLine()) != null ) {
+                if(!isJSONValid(receiveData))
+                    continue;
+
                 JsonObject jsonObject = new Gson().fromJson(receiveData, JsonObject.class);
                 String command = null;
                 if(jsonObject.has("command"))
@@ -57,16 +63,21 @@ public class ServerSocketThread implements Runnable{
                     }
 
                 } else if( command.equals( "@quit" ) ) {
-                    
-                    ServerController.deleteRoom(this.room);
-                    this.room = null;
+                    if(room.getUserCount() == 1 )
+                        ServerController.deleteRoom(this.room);
+                    else
+                        room.removeUser(uid);
 
+                    this.room = null;
                 } else if(command.contains("@join")) {
                     if(jsonObject.has("roomId")) {
                         ChatRoom room = (ChatRoom) ServerController.getRoom(jsonObject.get("roomId").getAsString());
 
                         if(jsonObject.has("uid")) {
-                            room.addUser(jsonObject.get("uid").getAsString(), socket);
+                            String uid  = jsonObject.get("uid").getAsString();
+                            room.addUser(uid, socket);
+
+                            this.uid = uid;
                             this.room = room;
                         }
                     }
@@ -99,10 +110,27 @@ public class ServerSocketThread implements Runnable{
                 }
             }
         }
-
         catch (Exception e ) {
             e.printStackTrace();
         }
+        finally {
+            try {
+                if( socket != null && !socket.isClosed() ) {
+                    socket.close();
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
 
+    }
+
+    public boolean isJSONValid(String test) {
+        try {
+            new Gson().fromJson(test, JsonObject.class);
+        } catch (JsonSyntaxException ex) {
+            return false;
+        }
+        return true;
     }
 }
