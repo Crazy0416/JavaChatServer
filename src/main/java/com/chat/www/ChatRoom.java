@@ -12,16 +12,16 @@ public class ChatRoom implements Room {
     private String roomInfo;    // 채팅방 정보
     private String managerId;   // 방장 유저 id(uid)
     private String managerName; // 방장 이름
-    private Hashtable<String, Socket> userList; // 참가한 유저 collection
+    private Hashtable<String, UserSocket> userList; // 참가한 유저 collection
 
-    public ChatRoom(String title, String roomInfo, String managerId, String managerName, Socket client) {
+    public ChatRoom(String title, String roomInfo, String managerId, String managerName, UserSocket client) {
         this.userCount = 0;
         this.roomId = new Date().getTime() + "||" + String.valueOf(ChatRoom.roomCount);
         this.title = title;
         this.roomInfo = roomInfo;
         this.managerId = managerId;
         this.managerName = managerName;
-        userList = new Hashtable<String, Socket>();
+        userList = new Hashtable<String, UserSocket>();
         // 유저 리스트에 매니저 추가.
         userList.put(managerId, client);
     }
@@ -41,7 +41,7 @@ public class ChatRoom implements Room {
     }
 
     @Override
-    public void addUser(String uid, Socket socket){
+    public void addUser(String uid, UserSocket socket){
         try {
             this.userList.put(uid, socket);
         } catch (Exception e) {
@@ -54,10 +54,20 @@ public class ChatRoom implements Room {
     public void removeUser(String uid) {
         try {
             this.userList.remove(uid);
+            System.out.println(this + "의 유저 수: " + this.userList.size());
+        } catch (NullPointerException ne) {
+
         } catch (Exception e) {
             e.printStackTrace();
             throw e;
         }
+        if(this.userList.size() == 0)
+            ServerController.deleteRoom(this);
+    }
+
+    @Override
+    public String toString() {
+        return "ChatRoom[roomId=" + roomId + ",title=" + title + "]";
     }
 
     public static int getRoomCount() {

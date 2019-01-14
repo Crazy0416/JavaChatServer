@@ -11,7 +11,7 @@ public interface Room {
     public int getUserCount();
 
     // 유저 소켓 방에 추가 후 성공여부 리턴
-    public void addUser(String uid, Socket socket);
+    public void addUser(String uid, UserSocket socket);
 
     // 유저 소켓 방에서 삭제 후 성공여부 리턴
     public void removeUser(String uid);

@@ -6,41 +6,35 @@ import com.google.gson.JsonSyntaxException;
 
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.io.PrintWriter;
-import java.net.Socket;
 import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.Set;
 
-public class ServerSocketThread implements Runnable{
+public class ClientSocketHandler implements Runnable{
 
-    Socket socket;
-    BufferedReader ois;
-    PrintWriter oos;
-    ChatRoom room;
-    String uid;
+    private UserSocket userSocket;
+    private BufferedReader uSocketBR;
+    private PrintWriter uSocketPW;
+    private ChatRoom room;
 
-    public ServerSocketThread(Socket socket) {
-        this.socket = socket;
-        try {
-
-            ois = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            oos = new PrintWriter(socket.getOutputStream());
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+    public ClientSocketHandler(UserSocket userSocket) {
+        this.userSocket = userSocket;
+        uSocketBR = userSocket.getBufferedReader();
+        uSocketPW = userSocket.getPrintWriter();
     }
 
     @Override
     public void run() {
         String receiveData;
 
+        // TODO: 클라이언트의 비정상적인 종료에 대한 대처 방안 생각. (graceful 종료?, heartbeat 체크?)
+        // TODO: 각 커맨드에 대해 함수로 작성하여 관리하기 쉽게 만들기
+        // TODO: 각 커맨드를 if else 문으로 검사하지 않고 해쉬를 사용할 수 있는 지 알아보기.
         try
         {
-            while( (receiveData = ois.readLine()) != null ) {
-                if(!isJSONValid(receiveData))
+            while( (receiveData = uSocketBR.readLine()) != null ) {
+                if(!isJSONValid(receiveData))   // json validation check
                     continue;
 
                 JsonObject jsonObject = new Gson().fromJson(receiveData, JsonObject.class);
@@ -48,7 +42,7 @@ public class ServerSocketThread implements Runnable{
                 if(jsonObject.has("command"))
                     command = jsonObject.get("command").getAsString();
 
-                System.out.println(socket.toString() + " json: " + receiveData );
+                System.out.println(userSocket.toString() + " json: " + receiveData );
 
                 if (command == null) {
 
@@ -60,32 +54,33 @@ public class ServerSocketThread implements Runnable{
                     }
 
                 } else if( command.equals( "@quit" ) ) {
-                    if(room.getUserCount() == 1 )
-                        ServerController.deleteRoom(this.room);
-                    else
-                        room.removeUser(uid);
+                    if(room == null)
+                        break;
+
+                    room.removeUser(userSocket.getUid());
 
                     this.room = null;
                 } else if(command.contains("@join")) {
-                    if(jsonObject.has("roomId")) {
+                    if(jsonObject.has("roomId") && jsonObject.has("uid") && jsonObject.has("name") ) {
                         ChatRoom room = (ChatRoom) ServerController.getRoom(jsonObject.get("roomId").getAsString());
 
-                        if(jsonObject.has("uid")) {
-                            String uid  = jsonObject.get("uid").getAsString();
-                            room.addUser(uid, socket);
-
-                            this.uid = uid;
-                            this.room = room;
-                        }
+                        this.userSocket.setUid(jsonObject.get("uid").getAsString());
+                        this.userSocket.setName(jsonObject.get("name").getAsString());
+                        this.room = room;
+                        room.addUser(this.userSocket.getUid(), userSocket);
+                    } else {
+                        // TODO: 필드가 제대로 오지 않는다면 클라이언트에게 오류 발생.
                     }
-
                 } else if(command.contains("@create")) {
                     String title        = jsonObject.get("title").getAsString();
                     String roomInfo     = jsonObject.get("roomInfo").getAsString();
                     String managerId    = jsonObject.get("managerId").getAsString();
                     String managerName  = jsonObject.get("managerName").getAsString();
 
-                    ChatRoom chatRoom = new ChatRoom(title, roomInfo, managerId, managerName, socket);
+                    this.userSocket.setUid(jsonObject.get("managerId").getAsString());
+                    this.userSocket.setName(jsonObject.get("managerName").getAsString());
+
+                    ChatRoom chatRoom = new ChatRoom(title, roomInfo, managerId, managerName, userSocket);
                     this.room = chatRoom;
 
                     ServerController.addRoom(chatRoom);
@@ -100,10 +95,10 @@ public class ServerSocketThread implements Runnable{
                     while(itr.hasNext()) {
                         roomId = itr.next();
                         ChatRoom room = (ChatRoom) roomList.get(roomId);
-                        oos.println("RoomId: " + roomId + " || Room title: " +  room.getTitle());
+                        uSocketPW.println("RoomId: " + roomId + " || Room title: " +  room.getTitle());
                     }
 
-                    oos.flush();
+                    uSocketPW.flush();
                 }
             }
         }
@@ -112,9 +107,16 @@ public class ServerSocketThread implements Runnable{
         }
         finally {
             try {
-                if( socket != null && !socket.isClosed() ) {
-                    socket.close();
+                String clientIp = userSocket.toString();
+
+                // TODO: 아무리 봐도 유저 지울때마다 체크하는게 오바인듯
+                if(room != null)
+                    room.removeUser(userSocket.getUid());
+
+                if( userSocket != null && !userSocket.isClosed() ) {
+                    userSocket.close();
                 }
+                System.out.println(clientIp + " 클라이언트가 종료되었습니다.");
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -122,9 +124,10 @@ public class ServerSocketThread implements Runnable{
 
     }
 
-    public boolean isJSONValid(String test) {
+    // jsonStr이 json 문자열인지 확인하는 메서드.
+    public boolean isJSONValid(String jsonStr) {
         try {
-            new Gson().fromJson(test, JsonObject.class);
+            new Gson().fromJson(jsonStr, JsonObject.class);
         } catch (JsonSyntaxException ex) {
             return false;
         }

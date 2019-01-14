@@ -1,20 +1,19 @@
 package com.chat.www;
 
 import java.io.IOException;
-import java.net.ServerSocket;
-import java.net.Socket;
 import java.util.Hashtable;
 
 public class ServerController {
     private int PORT;
     private static Hashtable<String, Room> roomList = new Hashtable<>();    // 멀티 스레드 동기화
-    ServerSocket serverSocket;
+    CustomServerSocket serverSocket;
 
     public ServerController(){
         PORT = 8888;
 
         try {
-            serverSocket = new ServerSocket(PORT);
+            serverSocket = new CustomServerSocket(PORT);
+            System.out.println("서버가 동작중입니다. ip: " + serverSocket.getInetAddress().getHostAddress() + " port: " + PORT);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -39,14 +38,14 @@ public class ServerController {
     }
 
     public void start() throws IOException {
-        ServerSocketThread sr;
+        ClientSocketHandler sr;
         Thread t;
 
         while(true) {
-            Socket socket = serverSocket.accept();
+            UserSocket socket = (UserSocket) serverSocket.accept();
             if( socket != null ) { //클라이언트 소켓과 연결시
-                System.out.println(socket.getInetAddress().getHostName() + " 클라이언트가 연결되었습니다.");
-                sr = new ServerSocketThread(socket); //채팅 스레드를 생성합니다.
+                System.out.println(socket + " 클라이언트가 연결되었습니다.");
+                sr = new ClientSocketHandler(socket); //채팅 스레드를 생성합니다.
                 t = new Thread(sr); //채팅스레드를 시작합니다.
                 t.start();
             }
