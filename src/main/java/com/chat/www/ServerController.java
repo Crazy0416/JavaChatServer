@@ -6,7 +6,7 @@ import java.util.Hashtable;
 public class ServerController {
     private int PORT;
     private static Hashtable<String, Room> roomList = new Hashtable<>();    // 멀티 스레드 동기화
-    CustomServerSocket serverSocket;
+    private CustomServerSocket serverSocket;
 
     public ServerController(){
         PORT = 8888;
@@ -28,7 +28,6 @@ public class ServerController {
     }
 
     public static synchronized Room getRoom(String roomId) {
-        System.out.println(roomList.toString());
         Room room = roomList.get(roomId);
         return room;
     }
@@ -50,5 +49,9 @@ public class ServerController {
                 t.start();
             }
         }
+    }
+
+    public CustomServerSocket getServerSocket() {
+        return serverSocket;
     }
 }
