@@ -14,6 +14,10 @@ public class UserSocket extends Socket {
         super(socket);
     }
 
+    public UserSocket() throws IOException {
+        super();
+    }
+
     public void setIOStream() throws IOException{
         br = new BufferedReader(new InputStreamReader(this.getInputStream()));
         pw = new PrintWriter(new OutputStreamWriter(this.getOutputStream()));
@@ -25,6 +29,14 @@ public class UserSocket extends Socket {
 
     public BufferedReader getBufferedReader() {
         return br;
+    }
+
+    public void setPw(PrintWriter pw) {
+        this.pw = pw;
+    }
+
+    public void setBr(BufferedReader br) {
+        this.br = br;
     }
 
     public String getUid() {
