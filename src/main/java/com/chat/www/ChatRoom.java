@@ -6,7 +6,6 @@ import java.util.*;
 public class ChatRoom implements Room {
     public static int roomCount = 0;
 
-    private int userCount;      // 유저 수
     private String roomId;      // 채팅방 primary key
     private String title;       // 채팅방 제목
     private String roomInfo;    // 채팅방 정보
@@ -15,7 +14,6 @@ public class ChatRoom implements Room {
     private Hashtable<String, UserSocket> userList; // 참가한 유저 collection
 
     public ChatRoom(String title, String roomInfo, String managerId, String managerName, UserSocket client) {
-        this.userCount = 0;
         this.roomId = new Date().getTime() + "||" + String.valueOf(ChatRoom.roomCount);
         this.title = title;
         this.roomInfo = roomInfo;
@@ -37,7 +35,7 @@ public class ChatRoom implements Room {
 
     @Override
     public int getUserCount() {
-        return this.userCount;
+        return this.userList.size();
     }
 
     @Override
@@ -54,7 +52,6 @@ public class ChatRoom implements Room {
     public void removeUser(String uid) {
         try {
             this.userList.remove(uid);
-            System.out.println(this + "의 유저 수: " + this.userList.size());
         } catch (NullPointerException ne) {
 
         } catch (Exception e) {
@@ -76,10 +73,6 @@ public class ChatRoom implements Room {
 
     public static void setRoomCount(int roomCount) {
         ChatRoom.roomCount = roomCount;
-    }
-
-    public void setUserCount(int userCount) {
-        this.userCount = userCount;
     }
 
     public String getRoomId() {
