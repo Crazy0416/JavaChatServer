@@ -1,6 +1,5 @@
 package com.chat.www;
 
-import java.net.Socket;
 import java.util.*;
 
 public class ChatRoom implements Room {
@@ -26,7 +25,7 @@ public class ChatRoom implements Room {
 
     @Override
     public void broadCastMessage(String message) throws InterruptedException{
-        Runnable bcm = new BroadCastMessage(this.userList, message);
+        Runnable bcm = new BroadCastMessageThread(this.userList, message);
         Thread thread = new Thread(bcm);
 
         thread.start();

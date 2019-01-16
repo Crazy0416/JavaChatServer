@@ -8,12 +8,12 @@ import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.Set;
 
-public class BroadCastMessage implements Runnable {
+public class BroadCastMessageThread implements Runnable {
 
     private Hashtable<String, UserSocket> userList;
     private String message;
 
-    public BroadCastMessage(Hashtable<String, UserSocket> userList, String message) {
+    public BroadCastMessageThread(Hashtable<String, UserSocket> userList, String message) {
         this.userList = userList;
         this.message = message;
     }
